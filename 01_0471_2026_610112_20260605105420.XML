@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+<DeclarationMetaData xsi:schemaLocation="urn:wco:datamodel:PE:DocumentMetaData:1 DeclarationMetaData_PE_1p0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:wco:datamodel:PE:DocumentMetaData:1" xmlns:ds="urn:wco:datamodel:PE:MetaData_DS:1">
+<WCODataModelVersionCode>3.7</WCODataModelVersionCode>
+<WCOTypeName>DEC</WCOTypeName>
+<ResponsibleCountryCode>PE</ResponsibleCountryCode>
+<ResponsibleAgencyName>SUNAT</ResponsibleAgencyName>
+<FunctionalDefinition>0471</FunctionalDefinition>
+<Declaration xmlns="urn:wco:datamodel:PE:Declaration:1" xmlns:ds="urn:wco:datamodel:PE:Declaration_DS:1" xmlns:eds="urn:wco:datamodel:PE:Declaration_EDS:1">
+   <FunctionCode>0471</FunctionCode>
+   <FunctionalReferenceID>2026610112</FunctionalReferenceID>
+   <IssueDateTime>
+      <ds:DateTimeString formatCode="204">20260605091420</ds:DateTimeString>
+   </IssueDateTime>
+   <TypeCode>CUSCAR</TypeCode>
+   <VersionID>1.0</VersionID>
+   <TotalGrossMassMeasure unitCode="KGM">1700.000</TotalGrossMassMeasure>
+   <TotalPackageQuantity>120</TotalPackageQuantity>
+   <Submitter>
+      <ID schemeID="4">20100118336</ID>
+      <RoleCode>20</RoleCode>
+      <Contact>
+         <Name>20147738863</Name>
+         <FunctionCode>BI</FunctionCode>
+      </Contact>
+   </Submitter>
+   <DeclarationOffice>
+      <ID>235</ID>
+   </DeclarationOffice>
+   <AdditionalDocument>
+      <ID>HANAE02889</ID>
+      <IssueDateTime>
+         <ds:DateTimeString formatCode="202">2026</ds:DateTimeString>
+      </IssueDateTime>
+      <issueLocationID>235</issueLocationID>
+      <TypeCode>335</TypeCode>
+   </AdditionalDocument>
+   <BorderTransportMeans>
+      <ModeCode>4</ModeCode>
+      <DepartureDateTime>
+         <ds:DateTimeString formatCode="204">20260607000000</ds:DateTimeString>
+      </DepartureDateTime>
+      <JourneyID>4714</JourneyID>
+   </BorderTransportMeans>
+   <Carrier>
+      <Name>AIRMAX S.A.</Name>
+      <ID schemeID="4">20509718483</ID>
+      <RoleCode>12</RoleCode>
+   </Carrier>
+   <Consignment>
+      <AdditionalDocument>
+         <IssueDateTime>
+            <ds:DateTimeString formatCode="204">20260605000000</ds:DateTimeString>
+         </IssueDateTime>
+         <TypeCode>705</TypeCode>
+      </AdditionalDocument>
+      <Consignee>
+         <Name><![CDATA[STANDARD RECREATION OPERATING  COMPANY LLC]]></Name>
+         <RoleCode>CN</RoleCode>
+      </Consignee>
+      <ConsignmentItem>
+         <Commodity>
+            <Description><![CDATA[TEXTILES APPAREL]]></Description>
+            <CategoryQualifierCode>B</CategoryQualifierCode>
+         </Commodity>
+      </ConsignmentItem>
+      <Consignor>
+         <ID schemeID="4">20601197171</ID>
+         <RoleCode>SF</RoleCode>
+      </Consignor>
+      <GoodsLocation>
+         <ID>USMIA</ID>
+         <TypeCode>65</TypeCode>
+      </GoodsLocation>
+      <LoadingLocation>
+         <ID>PELIM</ID>
+      </LoadingLocation>
+      <NotifyParty>
+         <Name><![CDATA[STANDARD RECREATION OPERATING  COMPANY LLC]]></Name>
+         <RoleCode>NS</RoleCode>
+         <Address>
+            <Line><![CDATA[12 LEXINGTON COURT SHELTON CT06484 USA]]></Line>
+         </Address>
+      </NotifyParty>
+   </Consignment>
+</Declaration>
+</DeclarationMetaData>

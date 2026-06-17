@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Hanseatica.Api.Seida.Api/Hanseatica.Api.Seida.Api.csproj" />
+  <Project Path="Hanseatica.Api.Seida.Application/Hanseatica.Api.Seida.Application.csproj" />
+  <Project Path="Hanseatica.Api.Seida.Domain/Hanseatica.Api.Seida.Domain.csproj" />
+  <Project Path="Hanseatica.Api.Seida.Infrastructure/Hanseatica.Api.Seida.Infrastructure.csproj" />
+  <Project Path="Hanseatica.Api.Seida.Tests/Hanseatica.Api.Seida.Tests.csproj" />
+</Solution>

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hanseatica.Api.Seida.Domain\Hanseatica.Api.Seida.Domain.csproj" />
+    <ProjectReference Include="..\Hanseatica.Api.Seida.Application\Hanseatica.Api.Seida.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Refit" Version="11.0.1" />
+    <PackageReference Include="Refit.HttpClientFactory" Version="11.0.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

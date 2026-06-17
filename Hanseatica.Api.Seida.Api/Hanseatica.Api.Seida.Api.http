@@ -1,0 +1,6 @@
+@Hanseatica.Api.Seida.Api_HostAddress = http://localhost:5244
+
+GET {{Hanseatica.Api.Seida.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
