@@ -1,5 +1,4 @@
 using Hanseatica.Api.Seida.Api;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,20 +7,8 @@ builder.Services.AddControllers();
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddCustomHealthChecks(builder.Configuration);
 
-// Add OpenAPI documentation
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Info = new()
-        {
-            Title = "Hanseatica SEIDA API",
-            Version = "v1",
-            Description = "API for submitting files and querying submission status through the SEIDA service."
-        };
-        return Task.CompletedTask;
-    });
-});
+// Add Swagger documentation
+builder.Services.AddSwaggerGen();
 
 // Add logging
 builder.Services.AddLogging(config =>
@@ -36,11 +23,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference(options =>
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
     {
-        options.WithTitle("Hanseatica SEIDA API");
-        options.WithDefaultOpenAllTags(true);
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Hanseatica SEIDA API v1");
+        options.RoutePrefix = "swagger";
     });
 }
 
