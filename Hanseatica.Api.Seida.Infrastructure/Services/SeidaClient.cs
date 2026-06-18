@@ -4,6 +4,7 @@ using Application.DTOs;
 using Application.Exceptions;
 using Application.Interfaces;
 using ExternalServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
@@ -12,16 +13,16 @@ using Microsoft.Extensions.Logging;
 public class SeidaClient : ISeidaClient
 {
     private readonly ISeidaHttpClient _httpClient;
-    private readonly IAuthenticationService _authService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<SeidaClient> _logger;
 
     public SeidaClient(
         ISeidaHttpClient httpClient,
-        IAuthenticationService authService,
+        IConfiguration configuration,
         ILogger<SeidaClient> logger)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -31,16 +32,22 @@ public class SeidaClient : ISeidaClient
         {
             _logger.LogInformation("Submitting file to SEIDA service with transaction: {TransactionNumber}", transactionNumber);
 
-            var credentials = _authService.GetCredentials();
-            if (!credentials.IsValid)
-                throw new SeidaServiceException("Invalid authentication credentials");
+            var numeroRuc = _configuration["Seida:NumeroRUC"]
+                ?? throw new SeidaServiceException("SEIDA NumeroRUC is not configured");
+            var usuarioSOL = _configuration["Seida:UsuarioSOL"]
+                ?? throw new SeidaServiceException("SEIDA UsuarioSOL is not configured");
+            var solPassword = _configuration["Seida:SolPassword"]
+                ?? throw new SeidaServiceException("SEIDA SolPassword is not configured");
+
+            // ValidateTransactionNumber(transactionNumber, numeroRuc);
+            var compositeUsername = BuildCompositeUsername(numeroRuc, usuarioSOL);
 
             var request = new SubmitFileRequest
             {
-                Username = credentials.Username,
-                EncryptedPassword = _authService.EncryptCredentials(credentials.Username, credentials.Password),
+                Username = compositeUsername,
+                Password = solPassword,
                 TransactionNumber = transactionNumber,
-                FileContent = fileContent
+                FileContent = Convert.ToBase64String(fileContent)
             };
 
             var response = await _httpClient.SubmitFileAsync(request, cancellationToken);
@@ -79,16 +86,20 @@ public class SeidaClient : ISeidaClient
         {
             _logger.LogInformation("Querying SEIDA service. Year: {Year}, Ticket: {TicketNumber}", year, ticketNumber);
 
-            var credentials = _authService.GetCredentials();
-            if (!credentials.IsValid)
-                throw new SeidaServiceException("Invalid authentication credentials");
+            var numeroRuc = _configuration["Seida:NumeroRUC"]
+                ?? throw new SeidaServiceException("SEIDA NumeroRUC is not configured");
+            var usuarioSOL = _configuration["Seida:UsuarioSOL"]
+                ?? throw new SeidaServiceException("SEIDA UsuarioSOL is not configured");
+            var solPassword = _configuration["Seida:SolPassword"]
+                ?? throw new SeidaServiceException("SEIDA SolPassword is not configured");
 
+            var compositeUsername = BuildCompositeUsername(numeroRuc, usuarioSOL);
             var queryXml = $"<consulta><tipo>1</tipo><parametros><numeroTicket>{ticketNumber.Trim()}</numeroTicket><annoTicket>{year}</annoTicket></parametros></consulta>";
 
             var request = new QueryStatusRequest
             {
-                Username = credentials.Username,
-                EncryptedPassword = _authService.EncryptCredentials(credentials.Username, credentials.Password),
+                Username = compositeUsername,
+                Password = solPassword,
                 QueryParameters = queryXml
             };
 
@@ -120,6 +131,65 @@ public class SeidaClient : ISeidaClient
             _logger.LogError(ex, "Unexpected error querying SEIDA service");
             throw new SeidaServiceException("Failed to query SEIDA service", ex);
         }
+    }
+
+    private static string BuildCompositeUsername(string numeroRuc, string usuarioSOL)
+    {
+        const string MacAddress = "88:51:FB:4A:50:26";
+        const string IpAddress = "192.168.1.45";
+        return $"{numeroRuc}{usuarioSOL}|{MacAddress}|{IpAddress}|2";
+    }
+
+    private static void ValidateTransactionNumber(string transactionNumber, string numeroRuc)
+    {
+        if (string.IsNullOrWhiteSpace(transactionNumber))
+            throw new SeidaServiceException("Transaction number cannot be empty");
+
+        var parts = transactionNumber.Split('-');
+        if (parts.Length != 4)
+            throw new SeidaServiceException(
+                $"Invalid transaction number format. Expected: {{RUC}}-{{YYYYMMDD}}-{{HHMMSS}}-{{SEQUENCE}}, got: {transactionNumber}");
+
+        if (parts[0] != numeroRuc)
+            throw new SeidaServiceException(
+                $"Transaction number RUC '{parts[0]}' does not match configured RUC '{numeroRuc}'");
+
+        if (!IsValidDate(parts[1]))
+            throw new SeidaServiceException(
+                $"Invalid date format in transaction number. Expected YYYYMMDD, got: {parts[1]}");
+
+        if (!IsValidTime(parts[2]))
+            throw new SeidaServiceException(
+                $"Invalid time format in transaction number. Expected HHMMSS, got: {parts[2]}");
+
+        if (!int.TryParse(parts[3], out _))
+            throw new SeidaServiceException(
+                $"Invalid sequence number in transaction number. Expected numeric value, got: {parts[3]}");
+    }
+
+    private static bool IsValidDate(string dateStr)
+    {
+        if (dateStr.Length != 8 || !dateStr.All(char.IsDigit))
+            return false;
+        return DateTime.TryParseExact(dateStr, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out _);
+    }
+
+    private static bool IsValidTime(string timeStr)
+    {
+        if (timeStr.Length != 6 || !timeStr.All(char.IsDigit))
+            return false;
+        return DateTime.TryParseExact(timeStr, "HHmmss", null, System.Globalization.DateTimeStyles.None, out _);
+    }
+
+    /// <summary>
+    /// Generates a transaction number in SUNAT SEIDA format: {RUC}-{YYYYMMDD}-{HHMMSS}-{SEQUENCE}
+    /// </summary>
+    public static string GenerateTransactionNumber(string numeroRuc, int sequence = 1)
+    {
+        var now = DateTime.Now;
+        var date = now.ToString("yyyyMMdd");
+        var time = now.ToString("HHmmss");
+        return $"{numeroRuc}-{date}-{time}-{sequence:D3}";
     }
 
     private ReceiptDto MapToReceiptDto(SeidaReceiptResponse response)

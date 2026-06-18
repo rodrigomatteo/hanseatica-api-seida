@@ -3,10 +3,12 @@ namespace Hanseatica.Api.Seida.Tests.Unit.Services;
 using Hanseatica.Api.Seida.Application.DTOs;
 using Hanseatica.Api.Seida.Application.Exceptions;
 using Hanseatica.Api.Seida.Application.Interfaces;
+using Hanseatica.Api.Seida.Domain.ValueObjects;
 using Hanseatica.Api.Seida.Infrastructure.ExternalServices;
 using Hanseatica.Api.Seida.Infrastructure.Services;
 using Hanseatica.Api.Seida.Tests.Fixtures;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -14,19 +16,24 @@ using Xunit;
 public class SeidaClientTests
 {
     private readonly Mock<ISeidaHttpClient> _mockHttpClient;
-    private readonly Mock<IAuthenticationService> _mockAuthService;
+    private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<ILogger<SeidaClient>> _mockLogger;
     private readonly SeidaClient _client;
 
     public SeidaClientTests()
     {
         _mockHttpClient = new Mock<ISeidaHttpClient>();
-        _mockAuthService = new Mock<IAuthenticationService>();
+        _mockConfiguration = new Mock<IConfiguration>();
         _mockLogger = new Mock<ILogger<SeidaClient>>();
+
+        // Setup default mock configuration values
+        _mockConfiguration.Setup(x => x["Seida:NumeroRUC"]).Returns("20100010136");
+        _mockConfiguration.Setup(x => x["Seida:UsuarioSOL"]).Returns("PILOTONS");
+        _mockConfiguration.Setup(x => x["Seida:SolPassword"]).Returns("TESTPAS1");
 
         _client = new SeidaClient(
             _mockHttpClient.Object,
-            _mockAuthService.Object,
+            _mockConfiguration.Object,
             _mockLogger.Object);
     }
 
@@ -34,7 +41,7 @@ public class SeidaClientTests
     public async Task SubmitFileAsync_WithValidData_ReturnsReceipt()
     {
         // Arrange
-        var transactionNumber = "TXN123456";
+        var transactionNumber = "20100010136-20240617-143022-001";
         var fileContent = new byte[1024];
         var response = new SeidaReceiptResponse
         {
@@ -66,7 +73,7 @@ public class SeidaClientTests
     public async Task SubmitFileAsync_WhenHttpClientReturnsNull_ThrowsSeidaServiceException()
     {
         // Arrange
-        var transactionNumber = "TXN123456";
+        var transactionNumber = "20100010136-20240617-143022-001";
         var fileContent = new byte[1024];
 
         _mockHttpClient.Setup(x => x.SubmitFileAsync(
@@ -83,7 +90,7 @@ public class SeidaClientTests
     public async Task SubmitFileAsync_WhenHttpClientThrowsHttpRequestException_ThrowsSeidaServiceException()
     {
         // Arrange
-        var transactionNumber = "TXN123456";
+        var transactionNumber = "20100010136-20240617-143022-001";
         var fileContent = new byte[1024];
 
         _mockHttpClient.Setup(x => x.SubmitFileAsync(
@@ -101,7 +108,7 @@ public class SeidaClientTests
     public async Task SubmitFileAsync_WithErrorsInResponse_ReturnsMappedErrors()
     {
         // Arrange
-        var transactionNumber = "TXN123456";
+        var transactionNumber = "20100010136-20240617-143022-001";
         var fileContent = new byte[1024];
         var response = new SeidaReceiptResponse
         {
@@ -205,7 +212,7 @@ public class SeidaClientTests
     public async Task SubmitFileAsync_PassesCorrectTransactionNumberToHttpClient()
     {
         // Arrange
-        var transactionNumber = "UNIQUE_TXN_12345";
+        var transactionNumber = "20100010136-20240617-143022-001";
         var fileContent = new byte[1024];
         var response = new SeidaReceiptResponse
         {
@@ -226,7 +233,7 @@ public class SeidaClientTests
             .Callback<SubmitFileRequest, CancellationToken>((req, _) =>
             {
                 req.TransactionNumber.Should().Be(transactionNumber);
-                req.FileContent.Should().Equal(fileContent);
+                req.FileContent.Should().Be(Convert.ToBase64String(fileContent));
             });
 
         // Act

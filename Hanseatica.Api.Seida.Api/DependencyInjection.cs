@@ -5,7 +5,6 @@ using Application.Services;
 using Infrastructure.ExternalServices;
 using Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Refit;
 
 /// <summary>
 /// Extension methods for configuring dependency injection
@@ -24,16 +23,16 @@ public static class DependencyInjection
         services.AddScoped<ISeidaClient, SeidaClient>();
         services.AddScoped<NetworkService>();
 
-        // Refit HTTP Client
+        // SOAP HTTP Client for SEIDA service
         var seidaBaseUrl = configuration["Seida:BaseUrl"] ?? configuration["ExternalServices:SeidaBaseUrl"]
             ?? throw new InvalidOperationException("SEIDA service base URL is not configured");
 
         var timeoutSeconds = int.TryParse(configuration["Seida:TimeoutSeconds"], out var t) ? t : 60;
 
-        services.AddRefitClient<ISeidaHttpClient>()
-            .ConfigureHttpClient(client =>
+        services.AddHttpClient<ISeidaHttpClient, SeidaHttpClient>(client =>
             {
-                client.BaseAddress = new Uri(seidaBaseUrl);
+                // Trailing slash is required so "ReceptorService.htm" resolves correctly
+                client.BaseAddress = new Uri(seidaBaseUrl.TrimEnd('/') + "/");
                 client.Timeout = TimeSpan.FromSeconds(timeoutSeconds + 5);
             })
             .AddStandardResilienceHandler(options =>

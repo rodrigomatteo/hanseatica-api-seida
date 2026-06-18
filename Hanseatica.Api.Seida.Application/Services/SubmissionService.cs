@@ -47,9 +47,9 @@ public class SubmissionService : ISubmissionService
         {
             _logger.LogInformation("Submitting file with transaction number: {TransactionNumber}", transactionNumber);
 
-            var credentials = _authService.GetCredentials();
-            if (!credentials.IsValid)
-                throw new SeidaServiceException("Invalid authentication credentials");
+            //var credentials = _authService.GetCredentials();
+            //if (!credentials.IsValid)
+            //    throw new SeidaServiceException("Invalid authentication credentials");
 
             var receipt = await _seidaClient.SubmitFileAsync(transactionNumber, fileContent, cancellationToken);
 
