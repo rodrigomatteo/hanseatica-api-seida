@@ -148,12 +148,12 @@ public class SoapRequestStructureTests
         operation.Should().NotBeNull();
         operation!.Attribute("xmlns")?.Value.Should().Be(ServiceNs.NamespaceName);
 
-        // Assert - Child elements use default namespace (no prefix)
-        var numeroTransaccion = operation.Element(ServiceNs + "numeroTransaccion");
+        // Assert - Child elements use no namespace (default namespace)
+        var numeroTransaccion = operation.Element("numeroTransaccion");
         numeroTransaccion.Should().NotBeNull();
         numeroTransaccion!.Value.Should().Be("TXN-2024-001234");
 
-        var informacionArchivo = operation.Element(ServiceNs + "informacionArchivo");
+        var informacionArchivo = operation.Element("informacionArchivo");
         informacionArchivo.Should().NotBeNull();
         informacionArchivo!.Value.Should().Be("UEsDBBQ=");
     }
