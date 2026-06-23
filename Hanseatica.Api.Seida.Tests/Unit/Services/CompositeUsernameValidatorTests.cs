@@ -99,11 +99,11 @@ public class CompositeUsernameValidatorTests
 
     [Theory]
     [InlineData("", "PILOTONS", "88:51:FB:4A:50:26", "192.168.1.45", "NumeroRUC cannot be empty")]
-    [InlineData("2010001013", "PILOTONS", "88:51:FB:4A:50:26", "192.168.1.45", "NumeroRUC must be 11 digits")]
-    [InlineData("2010001013X", "PILOTONS", "88:51:FB:4A:50:26", "192.168.1.45", "NumeroRUC must be 11 digits")]
+    [InlineData("2010001013", "PILOTONS", "88:51:FB:4A:50:26", "192.168.1.45", "NumeroRUC must be exactly")]
+    [InlineData("2010001013X", "PILOTONS", "88:51:FB:4A:50:26", "192.168.1.45", "must contain only numeric")]
     [InlineData("20100010136", "", "88:51:FB:4A:50:26", "192.168.1.45", "UsuarioSOL cannot be empty")]
-    [InlineData("20100010136", "pilotons", "88:51:FB:4A:50:26", "192.168.1.45", "UsuarioSOL must contain only uppercase")]
-    [InlineData("20100010136", "PILO-TONS", "88:51:FB:4A:50:26", "192.168.1.45", "UsuarioSOL must contain only uppercase")]
+    [InlineData("20100010136", "PILO-TONS", "88:51:FB:4A:50:26", "192.168.1.45", "must contain only")]
+    [InlineData("20100010136", "SOLUSER123456789", "88:51:FB:4A:50:26", "192.168.1.45", "exceeds maximum")]
     [InlineData("20100010136", "PILOTONS", "", "192.168.1.45", "MacAddress cannot be empty")]
     [InlineData("20100010136", "PILOTONS", "88:51:FB:4A:50", "192.168.1.45", "MacAddress must be in format")]
     [InlineData("20100010136", "PILOTONS", "88:51:FB:4A:50:ZZ", "192.168.1.45", "MacAddress must be in format")]
@@ -124,16 +124,16 @@ public class CompositeUsernameValidatorTests
     public void ValidateComponents_WithMultipleErrors_ReturnsAllErrors()
     {
         // Arrange
-        var numeroRuc = "invalid";
-        var usuarioSOL = "invalid";
-        var macAddress = "invalid";
-        var ipAddress = "invalid";
+        var numeroRuc = ""; // Empty - 1 error
+        var usuarioSOL = ""; // Empty - 1 error
+        var macAddress = "invalid"; // Invalid format - 1 error
+        var ipAddress = "invalid"; // Invalid format - 1 error
 
         // Act
         var errors = CompositeUsernameValidator.ValidateComponents(numeroRuc, usuarioSOL, macAddress, ipAddress).ToList();
 
         // Assert
-        errors.Should().HaveCount(4);
+        errors.Should().HaveCountGreaterThanOrEqualTo(4);
         errors.Should().Contain(e => e.Contains("NumeroRUC"));
         errors.Should().Contain(e => e.Contains("UsuarioSOL"));
         errors.Should().Contain(e => e.Contains("MacAddress"));

@@ -43,12 +43,43 @@ public class SeidaClient : ISeidaClient
             var solPassword = _configuration["Seida:SolPassword"]
                 ?? throw new SeidaServiceException("SEIDA SolPassword is not configured");
 
+            // Validate RUC number
+            try
+            {
+                RucNumberValidator.Validate(numeroRuc);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new SeidaServiceException($"Invalid RUC number: {ex.Message}", ex);
+            }
+
+            // Validate and normalize SOL user
+            string normalizedSolUser;
+            try
+            {
+                normalizedSolUser = SolUserValidator.ValidateAndNormalize(usuarioSOL);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new SeidaServiceException($"Invalid SOL user: {ex.Message}", ex);
+            }
+
+            // Validate SOL password
+            try
+            {
+                SolPasswordValidator.Validate(solPassword);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new SeidaServiceException($"Invalid SOL password: {ex.Message}", ex);
+            }
+
             ValidateTransactionNumber(transactionNumber, numeroRuc);
 
-            var compositeUsername = BuildCompositeUsername(numeroRuc, usuarioSOL);
+            var compositeUsername = BuildCompositeUsername(numeroRuc, normalizedSolUser);
 
             var validationErrors = CompositeUsernameValidator.ValidateComponents(
-                numeroRuc, usuarioSOL, _options.MacAddress, _options.IpAddress);
+                numeroRuc, normalizedSolUser, _options.MacAddress, _options.IpAddress);
             if (validationErrors.Any())
                 throw new SeidaServiceException(
                     $"Invalid credential components: {string.Join("; ", validationErrors)}");
@@ -104,10 +135,41 @@ public class SeidaClient : ISeidaClient
             var solPassword = _configuration["Seida:SolPassword"]
                 ?? throw new SeidaServiceException("SEIDA SolPassword is not configured");
 
-            var compositeUsername = BuildCompositeUsername(numeroRuc, usuarioSOL);
+            // Validate RUC number
+            try
+            {
+                RucNumberValidator.Validate(numeroRuc);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new SeidaServiceException($"Invalid RUC number: {ex.Message}", ex);
+            }
+
+            // Validate and normalize SOL user
+            string normalizedSolUser;
+            try
+            {
+                normalizedSolUser = SolUserValidator.ValidateAndNormalize(usuarioSOL);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new SeidaServiceException($"Invalid SOL user: {ex.Message}", ex);
+            }
+
+            // Validate SOL password
+            try
+            {
+                SolPasswordValidator.Validate(solPassword);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new SeidaServiceException($"Invalid SOL password: {ex.Message}", ex);
+            }
+
+            var compositeUsername = BuildCompositeUsername(numeroRuc, normalizedSolUser);
 
             var validationErrors = CompositeUsernameValidator.ValidateComponents(
-                numeroRuc, usuarioSOL, _options.MacAddress, _options.IpAddress);
+                numeroRuc, normalizedSolUser, _options.MacAddress, _options.IpAddress);
             if (validationErrors.Any())
                 throw new SeidaServiceException(
                     $"Invalid credential components: {string.Join("; ", validationErrors)}");

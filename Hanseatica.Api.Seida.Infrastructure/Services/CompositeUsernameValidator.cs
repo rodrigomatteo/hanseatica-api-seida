@@ -50,15 +50,11 @@ public static class CompositeUsernameValidator
     {
         var errors = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(numeroRuc))
-            errors.Add("NumeroRUC cannot be empty");
-        else if (!Regex.IsMatch(numeroRuc, @"^\d{11}$"))
-            errors.Add($"NumeroRUC must be 11 digits, got: {numeroRuc}");
+        // Validate RUC number
+        errors.AddRange(RucNumberValidator.GetErrors(numeroRuc));
 
-        if (string.IsNullOrWhiteSpace(usuarioSOL))
-            errors.Add("UsuarioSOL cannot be empty");
-        else if (!Regex.IsMatch(usuarioSOL, @"^[A-Z0-9]+$"))
-            errors.Add($"UsuarioSOL must contain only uppercase letters and digits, got: {usuarioSOL}");
+        // Validate SOL user
+        errors.AddRange(SolUserValidator.GetErrors(usuarioSOL));
 
         if (string.IsNullOrWhiteSpace(macAddress))
             errors.Add("MacAddress cannot be empty");
