@@ -10,6 +10,7 @@ using Hanseatica.Api.Seida.Tests.Fixtures;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -17,6 +18,7 @@ public class SeidaClientTests
 {
     private readonly Mock<ISeidaHttpClient> _mockHttpClient;
     private readonly Mock<IConfiguration> _mockConfiguration;
+    private readonly Mock<IOptions<SeidaClientOptions>> _mockOptions;
     private readonly Mock<ILogger<SeidaClient>> _mockLogger;
     private readonly SeidaClient _client;
 
@@ -24,6 +26,7 @@ public class SeidaClientTests
     {
         _mockHttpClient = new Mock<ISeidaHttpClient>();
         _mockConfiguration = new Mock<IConfiguration>();
+        _mockOptions = new Mock<IOptions<SeidaClientOptions>>();
         _mockLogger = new Mock<ILogger<SeidaClient>>();
 
         // Setup default mock configuration values
@@ -31,9 +34,18 @@ public class SeidaClientTests
         _mockConfiguration.Setup(x => x["Seida:UsuarioSOL"]).Returns("PILOTONS");
         _mockConfiguration.Setup(x => x["Seida:SolPassword"]).Returns("TESTPAS1");
 
+        // Setup default SeidaClientOptions
+        var defaultOptions = new SeidaClientOptions
+        {
+            MacAddress = "88:51:FB:4A:50:26",
+            IpAddress = "192.168.1.45"
+        };
+        _mockOptions.Setup(x => x.Value).Returns(defaultOptions);
+
         _client = new SeidaClient(
             _mockHttpClient.Object,
             _mockConfiguration.Object,
+            _mockOptions.Object,
             _mockLogger.Object);
     }
 

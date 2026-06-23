@@ -6,6 +6,7 @@ using Application.Interfaces;
 using ExternalServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 /// <summary>
 /// Implementation of SEIDA client
@@ -14,15 +15,18 @@ public class SeidaClient : ISeidaClient
 {
     private readonly ISeidaHttpClient _httpClient;
     private readonly IConfiguration _configuration;
+    private readonly SeidaClientOptions _options;
     private readonly ILogger<SeidaClient> _logger;
 
     public SeidaClient(
         ISeidaHttpClient httpClient,
         IConfiguration configuration,
+        IOptions<SeidaClientOptions> options,
         ILogger<SeidaClient> logger)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -39,8 +43,15 @@ public class SeidaClient : ISeidaClient
             var solPassword = _configuration["Seida:SolPassword"]
                 ?? throw new SeidaServiceException("SEIDA SolPassword is not configured");
 
-            // ValidateTransactionNumber(transactionNumber, numeroRuc);
+            ValidateTransactionNumber(transactionNumber, numeroRuc);
+
             var compositeUsername = BuildCompositeUsername(numeroRuc, usuarioSOL);
+
+            var validationErrors = CompositeUsernameValidator.ValidateComponents(
+                numeroRuc, usuarioSOL, _options.MacAddress, _options.IpAddress);
+            if (validationErrors.Any())
+                throw new SeidaServiceException(
+                    $"Invalid credential components: {string.Join("; ", validationErrors)}");
 
             var request = new SubmitFileRequest
             {
@@ -94,6 +105,13 @@ public class SeidaClient : ISeidaClient
                 ?? throw new SeidaServiceException("SEIDA SolPassword is not configured");
 
             var compositeUsername = BuildCompositeUsername(numeroRuc, usuarioSOL);
+
+            var validationErrors = CompositeUsernameValidator.ValidateComponents(
+                numeroRuc, usuarioSOL, _options.MacAddress, _options.IpAddress);
+            if (validationErrors.Any())
+                throw new SeidaServiceException(
+                    $"Invalid credential components: {string.Join("; ", validationErrors)}");
+
             var queryXml = $"<consulta><tipo>1</tipo><parametros><numeroTicket>{ticketNumber.Trim()}</numeroTicket><annoTicket>{year}</annoTicket></parametros></consulta>";
 
             var request = new QueryStatusRequest
@@ -133,11 +151,9 @@ public class SeidaClient : ISeidaClient
         }
     }
 
-    private static string BuildCompositeUsername(string numeroRuc, string usuarioSOL)
+    private string BuildCompositeUsername(string numeroRuc, string usuarioSOL)
     {
-        const string MacAddress = "88:51:FB:4A:50:26";
-        const string IpAddress = "192.168.1.45";
-        return $"{numeroRuc}{usuarioSOL}|{MacAddress}|{IpAddress}|2";
+        return $"{numeroRuc}{usuarioSOL}|{_options.MacAddress}|{_options.IpAddress}|2";
     }
 
     private static void ValidateTransactionNumber(string transactionNumber, string numeroRuc)

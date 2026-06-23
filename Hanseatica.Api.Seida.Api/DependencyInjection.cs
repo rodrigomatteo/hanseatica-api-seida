@@ -5,6 +5,7 @@ using Application.Services;
 using Infrastructure.ExternalServices;
 using Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 /// <summary>
 /// Extension methods for configuring dependency injection
@@ -13,6 +14,18 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        // SEIDA Client Options Configuration
+        services.Configure<SeidaClientOptions>(options =>
+        {
+            var macAddress = configuration["Seida:MacAddress"];
+            if (!string.IsNullOrEmpty(macAddress))
+                options.MacAddress = macAddress;
+
+            var ipAddress = configuration["Seida:IpAddress"];
+            if (!string.IsNullOrEmpty(ipAddress))
+                options.IpAddress = ipAddress;
+        });
+
         // Application Services
         services.AddScoped<ISubmissionService, SubmissionService>();
         services.AddScoped<IQueryService, QueryService>();
