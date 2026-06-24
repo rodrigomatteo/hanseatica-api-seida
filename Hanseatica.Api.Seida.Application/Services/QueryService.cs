@@ -47,9 +47,9 @@ public class QueryService : IQueryService
         {
             _logger.LogInformation("Querying status for ticket: {TicketNumber}, year: {Year}", ticketNumber, year);
 
-            var credentials = _authService.GetCredentials();
-            if (!credentials.IsValid)
-                throw new SeidaServiceException("Invalid authentication credentials");
+            //var credentials = _authService.GetCredentials();
+            //if (!credentials.IsValid)
+            //    throw new SeidaServiceException("Invalid authentication credentials");
 
             var response = await _seidaClient.QueryStatusAsync(year, ticketNumber, cancellationToken);
 

@@ -8,4 +8,6 @@ public class QueryResponseDto
     public string Description { get; set; } = string.Empty;
     public string StatusType { get; set; } = string.Empty;
     public byte[]? ResponseData { get; set; }
+    public string ErrorCode { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;
 }

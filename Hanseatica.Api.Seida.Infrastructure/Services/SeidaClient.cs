@@ -301,7 +301,9 @@ public class SeidaClient : ISeidaClient
         {
             Description = response.descripcion,
             StatusType = response.tipo,
-            ResponseData = response.datos
+            ResponseData = response.datos,
+            ErrorCode = response.errorCode,
+            ErrorMessage = response.errorMessage
         };
     }
 }

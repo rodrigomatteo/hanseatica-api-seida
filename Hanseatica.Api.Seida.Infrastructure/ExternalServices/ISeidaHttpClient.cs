@@ -98,8 +98,36 @@ public class SeidaHttpClient : ISeidaHttpClient
     public async Task<SeidaQueryResponse> QueryStatusAsync(
         QueryStatusRequest request, CancellationToken cancellationToken = default)
     {
+        /*
+         *       <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+        <soap:Header>
+          <wsa:Action>urn:realizarConsulta</wsa:Action>
+          <wsa:MessageID>urn:uuid:63ae8f99-7b23-4a37-9127-c0a14c6bcbc5</wsa:MessageID>
+          <wsa:ReplyTo>
+            <wsa:Address>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:Address>
+          </wsa:ReplyTo>
+          <wsa:To>https://e-seida.sunat.gob.pe/ol-ad-itseida-ws/ReceptorService.htm?wsdl</wsa:To>
+          <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <wsse:UsernameToken xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+              <wsse:Username>20100118336TESTPAS1|00:15:5D:60:7B:00|169.254.123.253|2</wsse:Username>
+              <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">TESTPAS1</wsse:Password>
+            </wsse:UsernameToken>
+          </wsse:Security>
+        </soap:Header>
+        <soap:Body>
+          <realizarConsulta xmlns="http://services.sigad.sunat.gob.pe">
+            <parametrosConsulta xmlns="">&lt;consulta&gt;&lt;tipo&gt;1&lt;/tipo&gt;&lt;parametros&gt;&lt;numeroTicket&gt;41072010&lt;/numeroTicket&gt;&lt;annoTicket&gt;2026&lt;/annoTicket&gt;&lt;/parametros&gt;&lt;/consulta&gt;</parametrosConsulta>
+          </realizarConsulta>
+        </soap:Body>
+      </soap:Envelope>
+
+         * */
+
+
+        var wsaNs = XNamespace.Get("http://schemas.xmlsoap.org/ws/2004/08/addressing");
+
         var securityHeader = new XElement(WsseNs + "Security",
-            new XAttribute(SoapEnvNs + "mustUnderstand", "1"),
+            new XAttribute(XNamespace.Xmlns + "wsse", WsseNs.NamespaceName),
             new XElement(WsseNs + "UsernameToken",
                 new XAttribute(XNamespace.Xmlns + "wsu", WsuNs.NamespaceName),
                 new XElement(WsseNs + "Username", request.Username),
@@ -107,9 +135,26 @@ public class SeidaHttpClient : ISeidaHttpClient
                     new XAttribute("Type", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"),
                     request.Password)));
 
-        var envelope = BuildEnvelope(ServiceNs + "realizarConsulta",
-            securityHeader,
-            new XElement(ServiceNs + "parametrosConsulta", request.QueryParameters));
+        var headerContent = new XElement(SoapEnvNs + "Header",
+            new XElement(wsaNs + "Action", "urn:realizarConsulta"),
+            new XElement(wsaNs + "MessageID", $"urn:uuid:{Guid.NewGuid()}"),
+            new XElement(wsaNs + "ReplyTo",
+                new XElement(wsaNs + "Address", "http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous")),
+            new XElement(wsaNs + "To", "https://e-seida.sunat.gob.pe/ol-ad-itseida-ws/ReceptorService.htm?wsdl"),
+            securityHeader);
+
+        var body = new XElement(ServiceNs + "realizarConsulta",
+            new XElement(XNamespace.None + "parametrosConsulta", request.QueryParameters));
+
+        var envelope = new XDocument(
+            new XDeclaration("1.0", "UTF-8", null),
+            new XElement(SoapEnvNs + "Envelope",
+                new XAttribute(XNamespace.Xmlns + "soap", SoapEnvNs.NamespaceName),
+                new XAttribute(XNamespace.Xmlns + "xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+                new XAttribute(XNamespace.Xmlns + "xsd", "http://www.w3.org/2001/XMLSchema"),
+                new XAttribute(XNamespace.Xmlns + "wsa", wsaNs.NamespaceName),
+                headerContent,
+                new XElement(SoapEnvNs + "Body", body)));
 
         var doc = await PostSoapAsync(envelope, "realizarConsulta", cancellationToken);
         return ParseQueryResponse(doc);
@@ -183,20 +228,89 @@ public class SeidaHttpClient : ISeidaHttpClient
 
     private static SeidaQueryResponse ParseQueryResponse(XDocument doc)
     {
+        // Try new structure first (realizarConsultaResultado), fall back to old (return)
+        var resultElement = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "realizarConsultaResultado");
+
+        if (resultElement != null)
+        {
+            // New structure: base64 in realizarConsultaResultado, details in respuesta
+            var base64 = resultElement.Value;
+            var respuestaElement = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "respuesta");
+
+            byte[] decodedData = Array.Empty<byte>();
+            string errorCode = string.Empty;
+            string errorMessage = string.Empty;
+
+            if (!string.IsNullOrEmpty(base64))
+            {
+                decodedData = Convert.FromBase64String(base64);
+
+                // Parse XML from decoded bytes to extract error information
+                try
+                {
+                    var xmlString = Encoding.UTF8.GetString(decodedData);
+                    var responseXml = XDocument.Parse(xmlString);
+
+                    // Extract error code and message from ReasonCode and Information nodes
+                    // These are typically within ReportedErrorProcessingStatus > ReportedErrorStatus
+                    var reasonCodeElement = responseXml.Descendants()
+                        .FirstOrDefault(e => e.Name.LocalName == "ReasonCode");
+                    var informationElement = responseXml.Descendants()
+                        .FirstOrDefault(e => e.Name.LocalName == "Information");
+
+                    if (reasonCodeElement != null)
+                    {
+                        var rcValue = reasonCodeElement.Value?.Trim();
+                        if (!string.IsNullOrEmpty(rcValue))
+                            errorCode = rcValue;
+                    }
+                    if (informationElement != null)
+                    {
+                        var infoValue = informationElement.Value?.Trim();
+                        if (!string.IsNullOrEmpty(infoValue))
+                            errorMessage = infoValue;
+                    }
+
+                    // Debug: Log the entire XML to understand structure
+                    System.Diagnostics.Debug.WriteLine($"Query Response XML:\n{responseXml.ToString()}");
+                    System.Diagnostics.Debug.WriteLine($"Extracted Error Code: '{errorCode}', Error Message: '{errorMessage}'");
+                }
+                catch (Exception ex)
+                {
+                    // If XML parsing fails, leave error info empty
+                    System.Diagnostics.Debug.WriteLine($"Error parsing query response XML: {ex.Message}");
+                }
+            }
+
+            return new SeidaQueryResponse
+            {
+                descripcion = respuestaElement?.Element(XNamespace.None + "descripcion")?.Value
+                           ?? respuestaElement?.Element(ServiceNs + "descripcion")?.Value
+                           ?? string.Empty,
+                tipo = respuestaElement?.Element(XNamespace.None + "tipo")?.Value
+                    ?? respuestaElement?.Element(ServiceNs + "tipo")?.Value
+                    ?? string.Empty,
+                datos = decodedData,
+                errorCode = errorCode,
+                errorMessage = errorMessage
+            };
+        }
+
+        // Fall back to old structure with return element
         var ret      = GetReturnElement(doc);
-        var base64   = ret.Element(ServiceNs + "datos")?.Value;
+        var base64Old   = ret.Element(ServiceNs + "datos")?.Value;
         return new SeidaQueryResponse
         {
             descripcion = ret.Element(ServiceNs + "descripcion")?.Value ?? string.Empty,
             tipo        = ret.Element(ServiceNs + "tipo")?.Value        ?? string.Empty,
-            datos       = string.IsNullOrEmpty(base64)
+            datos       = string.IsNullOrEmpty(base64Old)
                               ? Array.Empty<byte>()
-                              : Convert.FromBase64String(base64)
+                              : Convert.FromBase64String(base64Old)
         };
     }
 
     private static XElement GetReturnElement(XDocument doc)
-        => doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "return")
+        => doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "respuesta")
            ?? throw new InvalidOperationException(
                "Invalid SOAP response: <return> element not found. Check for a SOAP Fault in the response.");
 
@@ -246,6 +360,8 @@ public class SeidaQueryResponse
     public string descripcion { get; set; } = string.Empty;
     public string tipo        { get; set; } = string.Empty;
     public byte[] datos       { get; set; } = Array.Empty<byte>();
+    public string errorCode   { get; set; } = string.Empty;
+    public string errorMessage { get; set; } = string.Empty;
 }
 
 public class SeidaErrorDetail

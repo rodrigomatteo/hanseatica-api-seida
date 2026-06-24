@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliente SEIDA - Web</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 Cliente SEIDA para Web</h1>
+            <p class="subtitle">Sistema de Envío Integrado de Documentos Aduaneros</p>
+        </header>
+
+        <main>
+            <!-- Sección de Autenticación -->
+            <section class="auth-section">
+                <div class="section-title">Datos de Autenticación</div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="ruc">RUC</label>
+                        <input type="text" id="ruc" placeholder="10102822810" maxlength="11">
+                    </div>
+                    <div class="form-group">
+                        <label for="usuarioSOL">Usuario SOL</label>
+                        <input type="text" id="usuarioSOL" placeholder="rodrigo" maxlength="15">
+                    </div>
+                    <div class="form-group">
+                        <label for="codigoEnvio">Código de Envío</label>
+                        <input type="text" id="codigoEnvio" placeholder="123456">
+                    </div>
+                    <div class="form-group">
+                        <label for="claveSol">Clave SOL</label>
+                        <input type="password" id="claveSol" placeholder="••••••••">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección de Datos Referenciales -->
+            <section class="referential-section">
+                <div class="section-title">Datos Referenciales</div>
+
+                <div class="referential-grid">
+                    <div class="ref-item">
+                        <span class="ref-label">Dirección IP:</span>
+                        <span class="ref-value" id="ipAddress">169.254.123.253</span>
+                    </div>
+                    <div class="ref-item">
+                        <span class="ref-label">Dirección MAC:</span>
+                        <span class="ref-value" id="macAddress">00:15:50:60:7B:00</span>
+                    </div>
+                </div>
+                <button class="btn-secondary btn-small" id="btnRefresh">↻ Actualizar</button>
+            </section>
+
+            <!-- Tabs: Envios / Consultas -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="envios">Envíos</button>
+                <button class="tab-button" data-tab="consultas">Consultas</button>
+            </div>
+
+            <!-- Tab: Envios -->
+            <div class="tab-content active" id="envios">
+                <section class="operations-section">
+                    <div class="section-title">Envío de Archivos</div>
+
+                    <div class="operation-controls">
+                        <label for="numeroTransaccion">Nro. de Transacción:</label>
+                        <input type="text" id="numeroTransaccion" placeholder="YYYY-YYYYMMDD-HHMMSS-###">
+
+                        <label for="archivoEnvio">Nombre de Archivo (zip):</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="archivoEnvio" accept=".zip">
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn-secondary" id="btnAddEnvio">+ Agregar</button>
+                            <button class="btn-secondary" id="btnRemoveEnvio">− Eliminar</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">
+                                        <input type="checkbox" id="selectAllEnvios">
+                                    </th>
+                                    <th>Nro. Transacción</th>
+                                    <th>Nombre Archivo</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="enviosTableBody">
+                                <!-- Rows will be added dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button class="btn-primary" id="btnEnviar">Enviar</button>
+                </section>
+            </div>
+
+            <!-- Tab: Consultas -->
+            <div class="tab-content" id="consultas">
+                <section class="operations-section">
+                    <div class="section-title">Consulta de Tickets</div>
+
+                    <div class="operation-controls">
+                        <label for="annoConsulta">Año:</label>
+                        <input type="number" id="annoConsulta" min="2020" max="2099" value="2024">
+
+                        <label for="numeroTicket">Número de Ticket:</label>
+                        <input type="text" id="numeroTicket" placeholder="123456">
+
+                        <div class="button-group">
+                            <button class="btn-secondary" id="btnAddConsulta">+ Agregar</button>
+                            <button class="btn-secondary" id="btnRemoveConsulta">− Eliminar</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">
+                                        <input type="checkbox" id="selectAllConsultas">
+                                    </th>
+                                    <th>Año</th>
+                                    <th>Número Ticket</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="consultasTableBody">
+                                <!-- Rows will be added dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button class="btn-primary" id="btnConsultar">Consultar</button>
+                </section>
+            </div>
+
+            <!-- Sección de Resultados -->
+            <section class="results-section" id="resultsSection" style="display:none;">
+                <div class="section-title">Resultados</div>
+                <div class="results-container" id="resultsContainer"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>SEIDA API v1.0 | <span id="footerStatus">Listo</span></p>
+        </footer>
+    </div>
+
+    <!-- Modal de Carga -->
+    <div class="modal" id="loadingModal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p>Procesando solicitud...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

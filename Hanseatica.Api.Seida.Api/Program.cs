@@ -1,6 +1,15 @@
 using Hanseatica.Api.Seida.Api;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) =>
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithMachineName()
+        .Enrich.WithThreadId());
 
 // Add services
 builder.Services.AddControllers();
@@ -9,14 +18,6 @@ builder.Services.AddCustomHealthChecks(builder.Configuration);
 
 // Add Swagger documentation
 builder.Services.AddSwaggerGen();
-
-// Add logging
-builder.Services.AddLogging(config =>
-{
-    config.ClearProviders();
-    config.AddConsole();
-    config.AddDebug();
-});
 
 var app = builder.Build();
 
@@ -39,7 +40,13 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
 });
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseAuthorization();
+
 app.MapControllers();
 
+// Fallback para SPA: servir index.html para rutas no-API
+app.MapFallbackToFile("index.html");
+
 app.Run();
+
