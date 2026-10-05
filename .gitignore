@@ -117,3 +117,4 @@ Thumbs.db
 
 # JetBrains Rider
 *.sln.iml
+Hanseatica.Api.Seida.Api/appsettings.Development.json
